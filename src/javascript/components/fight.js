@@ -2,11 +2,8 @@ import { controls } from '../../constants/controls';
 
 export async function fight(firstFighter, secondFighter) {
   return new Promise((resolve) => {
-    // resolve the promise with the winner when fight is over
-
     firstFighter.currentHealth = firstFighter.health;
     secondFighter.currentHealth = secondFighter.health;
-
     firstFighter.critical = true;
     secondFighter.critical = true;
 
@@ -24,12 +21,11 @@ export async function fight(firstFighter, secondFighter) {
           secondFighter.block = true;
           break;
         case controls.PlayerOneAttack:
-          console.log('PlayerOneAttack');
           attackEnemy(firstFighter, secondFighter, getDamage, secondFighterHealthBar);
           break;
         case controls.PlayerTwoAttack:
-          console.log('PlayerTwoAttack');
           attackEnemy(secondFighter, firstFighter, getDamage, firstFighterHealthBar);
+          break;
       }
 
       criticalKeySet.add(e.code);
@@ -96,14 +92,14 @@ export function getDamage(attacker, defender) {
 }
 
 export function getHitPower(fighter) {
-  const criticalHitChance = Math.random() < 0.5 ? 2 : 1;
+  const criticalHitChance = Math.random() + 1;
   console.log("attack damage ->" + fighter.attack * criticalHitChance);
   return fighter.attack * criticalHitChance;
 }
 
 export function getBlockPower(fighter) {
-  const dodgeChance = Math.random() < 0.5 ? 2 : 1;
-  console.log("defence ->" + fighter.defense * dodgeChance);
+  const dodgeChance = Math.random() + 1;
+  console.log("defense ->" + fighter.defense * dodgeChance);
   return fighter.defense * dodgeChance;
 }
 
