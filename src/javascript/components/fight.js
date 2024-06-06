@@ -12,7 +12,7 @@ export async function fight(firstFighter, secondFighter) {
 
     const criticalKeySet = new Set();
 
-    document.addEventListener('keydown', (e) => {
+    const handleKeyDown = (e) => {
       switch (e.code) {
         case controls.PlayerOneBlock:
           firstFighter.block = true;
@@ -21,17 +21,21 @@ export async function fight(firstFighter, secondFighter) {
           secondFighter.block = true;
           break;
         case controls.PlayerOneAttack:
-          attackEnemy(firstFighter, secondFighter, getDamage, secondFighterHealthBar);
+          if (!firstFighter.block) {
+            attackEnemy(firstFighter, secondFighter, getDamage, secondFighterHealthBar);
+          }
           break;
         case controls.PlayerTwoAttack:
-          attackEnemy(secondFighter, firstFighter, getDamage, firstFighterHealthBar);
+          if (!secondFighter.block) {
+            attackEnemy(secondFighter, firstFighter, getDamage, firstFighterHealthBar);
+          }
           break;
       }
 
       criticalKeySet.add(e.code);
 
       if (
-        Array.from(criticalKeySet).sort().join(',') === controls.PlayerOneCriticalHitCombination.sort().join(',') &&
+        checkCriticalHitCombination(criticalKeySet, controls.PlayerOneCriticalHitCombination) &&
         firstFighter.critical
       ) {
         attackEnemyCritical(firstFighter, secondFighter, criticalHit, secondFighterHealthBar);
@@ -40,7 +44,7 @@ export async function fight(firstFighter, secondFighter) {
       }
 
       if (
-        Array.from(criticalKeySet).sort().join(',') === controls.PlayerTwoCriticalHitCombination.sort().join(',') &&
+        checkCriticalHitCombination(criticalKeySet, controls.PlayerTwoCriticalHitCombination) &&
         secondFighter.critical
       ) {
         attackEnemyCritical(secondFighter, firstFighter, criticalHit, firstFighterHealthBar);
@@ -49,15 +53,17 @@ export async function fight(firstFighter, secondFighter) {
       }
 
       if (firstFighter.currentHealth <= 0) {
+        cleanup();
         resolve(secondFighter);
       }
 
       if (secondFighter.currentHealth <= 0) {
+        cleanup();
         resolve(firstFighter);
       }
-    });
+    };
 
-    document.addEventListener('keyup', (e) => {
+    const handleKeyUp = (e) => {
       switch (e.code) {
         case controls.PlayerOneBlock:
           firstFighter.block = false;
@@ -68,21 +74,39 @@ export async function fight(firstFighter, secondFighter) {
       }
 
       criticalKeySet.delete(e.code);
-    });
+    };
+
+    const cleanup = () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
   });
 }
 
+function checkCriticalHitCombination(pressedKeys, combination) {
+  return combination.every((key) => pressedKeys.has(key));
+}
+
 export function attackEnemy(attacker, defender, damage, hpBar) {
-  if (attacker.block || defender.block) {
-    return 0;
+  if (defender.block) {
+    return;
   } else {
     defender.currentHealth -= damage(attacker, defender);
+    if (defender.currentHealth < 0) {
+      defender.currentHealth = 0;
+    }
     hpBar.style.width = `${(defender.currentHealth / defender.health) * 100}%`;
   }
 }
 
 export function attackEnemyCritical(attacker, defender, damage, hpBar) {
   defender.currentHealth -= damage(attacker, defender);
+  if (defender.currentHealth < 0) {
+    defender.currentHealth = 0;
+  }
   hpBar.style.width = `${(defender.currentHealth / defender.health) * 100}%`;
 }
 
@@ -93,13 +117,11 @@ export function getDamage(attacker, defender) {
 
 export function getHitPower(fighter) {
   const criticalHitChance = Math.random() + 1;
-  console.log("attack damage ->" + fighter.attack * criticalHitChance);
   return fighter.attack * criticalHitChance;
 }
 
 export function getBlockPower(fighter) {
   const dodgeChance = Math.random() + 1;
-  console.log("defense ->" + fighter.defense * dodgeChance);
   return fighter.defense * dodgeChance;
 }
 
